@@ -1,0 +1,68 @@
+image:
+  # Required: the site image, i.e. your content built FROM justserve.
+  # Prefer a digest (repo@sha256:…) over a tag so every pod runs the same build.
+  reference: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+replicaCount: 2
+
+# JUSTSERVE_* settings, applied per key over the image's ENV (see the justserve README).
+# A map rather than a list, so another values file can override or empty a single key.
+# JUSTSERVE_LISTEN is derived from containerPort and cannot be set here.
+env: {}
+#  JUSTSERVE_FALLBACK: /index.html
+#  JUSTSERVE_IMMUTABLE_ASSETS: /assets/
+#  JUSTSERVE_HEADER_CSP: "Content-Security-Policy: frame-ancestors 'none'"
+
+containerPort: 8080
+
+service:
+  port: 80
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    # Above the process's own ~16 MiB, the rest becomes page cache for the site.
+    memory: 128Mi
+
+# Keep serving this long after termination starts, while the gateway stops routing here.
+preStopSleepSeconds: 5
+
+# Loading a large site at a low CPU limit can take a while; the listener opens only after it.
+startupTimeoutSeconds: 120
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+networkPolicy:
+  enabled: true
+  # Deny all outbound traffic; the server makes none. Off by default because some CNIs
+  # (kindnet, in testing) also drop the replies to allowed connections, which takes the
+  # site down while rollouts still succeed. Enable it after checking it on your CNI.
+  denyEgress: false
+  # Peers allowed to reach the pod; the default admits Envoy Gateway's proxies.
+  from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: envoy-gateway-system
+
+# Gateway API route to the Service.
+httpRoute:
+  enabled: false
+  parentRefs: []
+  #  - name: edge
+  #    namespace: envoy-gateway-system
+  #    sectionName: https
+  hostnames: []
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []

@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "required": ["image", "replicaCount", "env", "containerPort", "service", "networkPolicy", "httpRoute"],
+  "properties": {
+    "image": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": {
+        "reference": {"type": "string", "minLength": 1},
+        "pullPolicy": {"enum": ["Always", "IfNotPresent", "Never"]}
+      }
+    },
+    "imagePullSecrets": {"type": "array"},
+    "replicaCount": {"type": "integer", "minimum": 0},
+    "env": {
+      "type": "object",
+      "propertyNames": {"pattern": "^JUSTSERVE_[A-Z0-9_]+$", "not": {"const": "JUSTSERVE_LISTEN"}},
+      "additionalProperties": {"type": ["string", "number", "boolean"]}
+    },
+    "containerPort": {"type": "integer", "minimum": 1, "maximum": 65535},
+    "service": {
+      "type": "object",
+      "properties": {"port": {"type": "integer", "minimum": 1, "maximum": 65535}}
+    },
+    "resources": {"type": "object"},
+    "preStopSleepSeconds": {"type": "integer", "minimum": 0},
+    "startupTimeoutSeconds": {"type": "integer", "minimum": 2},
+    "podDisruptionBudget": {
+      "type": "object",
+      "properties": {"enabled": {"type": "boolean"}, "maxUnavailable": {"type": ["integer", "string"]}}
+    },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {"enabled": {"type": "boolean"}, "denyEgress": {"type": "boolean"}, "from": {"type": "array"}}
+    },
+    "httpRoute": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "parentRefs": {"type": "array"},
+        "hostnames": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

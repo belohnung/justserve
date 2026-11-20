@@ -1,0 +1,26 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- if not .Values.networkPolicy.from }}
+{{- fail "networkPolicy.from must list the allowed peers: an ingress rule without peers admits everyone" }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "justserve.fullname" . }}
+  labels:
+    {{- include "justserve.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "justserve.selectorLabels" . | nindent 6 }}
+  {{- if .Values.networkPolicy.denyEgress }}
+  # Egress is listed without rules, so all outbound traffic is denied.
+  policyTypes: [Ingress, Egress]
+  {{- else }}
+  policyTypes: [Ingress]
+  {{- end }}
+  ingress:
+    - from:
+        {{- toYaml .Values.networkPolicy.from | nindent 8 }}
+      ports:
+        - port: http
+{{- end }}

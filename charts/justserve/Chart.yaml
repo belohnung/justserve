@@ -1,0 +1,11 @@
+apiVersion: v2
+name: justserve
+description: A static site served by justserve, hardened for the restricted Pod Security Standard.
+type: application
+version: 0.1.0
+appVersion: "0.1.0-rc1"
+home: https://github.com/belohnung/justserve
+sources:
+  - https://github.com/belohnung/justserve
+# The preStop sleep action is on by default from 1.30.
+kubeVersion: ">=1.30.0-0"
