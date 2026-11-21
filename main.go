@@ -35,7 +35,7 @@ func main() {
 	}
 	slog.Info("config", "version", version, "listen", cfg.Listen, "root", cfg.Root, "fallback", cfg.Fallback,
 		"notFound", cfg.NotFound, "immutable", cfg.Immutable, "cacheControl", cfg.CacheControl,
-		"headers", cfg.Headers, "types", cfg.Types, "precompressed", cfg.Precompressed,
+		"headers", cfg.Headers, "types", cfg.Types, "defaultType", cfg.DefaultType, "precompressed", cfg.Precompressed,
 		"readTimeout", cfg.ReadTimeout, "idleTimeout", cfg.IdleTimeout)
 
 	// SIGTERM is how Kubernetes stops a pod; as PID 1 it is ignored unless handled.

@@ -30,6 +30,8 @@ type Config struct {
 	Headers http.Header
 	// Extension ("." + lowercase) to Content-Type; overrides and extends the built-in table.
 	Types map[string]string
+	// Content-Type for files whose extension is in neither Types nor the built-in table.
+	DefaultType string
 	// Take encodings only from X.br, X.zst and X.gz instead of gzipping at startup.
 	Precompressed bool
 	// A connection that has not sent its complete request, headers and body, within this time is closed.
@@ -101,6 +103,9 @@ func parseConfig(args, environ []string, output io.Writer) (Config, []string, er
 	if !validFieldValue(cfg.CacheControl) {
 		return Config{}, nil, fmt.Errorf("-cache-control %q: invalid header value", cfg.CacheControl)
 	}
+	if err := checkMediaType(cfg.DefaultType); err != nil {
+		return Config{}, nil, fmt.Errorf("-default-type %q: %w", cfg.DefaultType, err)
+	}
 	return cfg, unknown, nil
 }
 
@@ -136,12 +141,13 @@ func newFlagSet(cfg *Config, output io.Writer) *flag.FlagSet {
 		if !ok || !strings.HasPrefix(ext, ".") || len(ext) < 2 || strings.Contains(ext[1:], ".") {
 			return fmt.Errorf("%q: want .ext=media/type", v)
 		}
-		if _, _, err := mime.ParseMediaType(ctype); err != nil {
+		if err := checkMediaType(ctype); err != nil {
 			return fmt.Errorf("%q: %w", v, err)
 		}
 		cfg.Types[strings.ToLower(ext)] = ctype
 		return nil
 	}), "type", "`.ext=media/type` Content-Type for an extension (repeatable)")
+	fs.StringVar(&cfg.DefaultType, "default-type", defaultType, "Content-Type `value` for files without a known extension, extensionless ones included")
 	fs.BoolVar(&cfg.Precompressed, "precompressed", false, "take encodings only from X.br, X.zst and X.gz siblings")
 	fs.DurationVar(&cfg.ReadTimeout, "read-timeout", 10*time.Second, "`time` a client has to send its complete request, headers and body")
 	// Longer than Envoy's default upstream idle timeout (1h), so the gateway closes first and never reuses a closing connection.
@@ -200,6 +206,19 @@ func parseHeader(v string) (name, value string, err error) {
 		}
 	}
 	return name, value, nil
+}
+
+// checkMediaType accepts a Content-Type value: type/subtype, optionally with parameters.
+// mime.ParseMediaType alone also accepts a bare token, as found in Content-Disposition.
+func checkMediaType(v string) error {
+	mediatype, _, err := mime.ParseMediaType(v)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(mediatype, "/") {
+		return fmt.Errorf("%q is not type/subtype", mediatype)
+	}
+	return nil
 }
 
 // isToken reports whether s is an RFC 9110 token.

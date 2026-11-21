@@ -59,8 +59,9 @@ var builtinTypes = map[string]string{
 
 const defaultType = "application/octet-stream"
 
-// contentType looks the extension of name up in overrides, then in the built-in table.
-func contentType(name string, overrides map[string]string) string {
+// contentType looks the extension of name up in overrides, then in the built-in table,
+// and returns fallback for any other extension or none.
+func contentType(name string, overrides map[string]string, fallback string) string {
 	ext := strings.ToLower(path.Ext(name))
 	if t, ok := overrides[ext]; ok {
 		return t
@@ -68,7 +69,7 @@ func contentType(name string, overrides map[string]string) string {
 	if t, ok := builtinTypes[ext]; ok {
 		return t
 	}
-	return defaultType
+	return fallback
 }
 
 // Non-text media types that compress well.

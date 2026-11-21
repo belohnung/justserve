@@ -43,6 +43,7 @@ func spaConfig(root string) Config {
 		Immutable:    []string{"/assets/"},
 		CacheControl: "no-cache",
 		Headers:      http.Header{"Referrer-Policy": {"no-referrer"}},
+		DefaultType:  defaultType,
 	}
 }
 
@@ -484,7 +485,7 @@ func TestContentTypes(t *testing.T) {
 		"m.webmanifest": "{}",
 		"crypto.wasm":   "\x00asm",
 	})
-	site := load(t, Config{Root: root, CacheControl: "no-cache", Types: map[string]string{".foo": "text/plain; charset=utf-8"}})
+	site := load(t, Config{Root: root, CacheControl: "no-cache", Types: map[string]string{".foo": "text/plain; charset=utf-8"}, DefaultType: defaultType})
 	for path, want := range map[string]string{
 		"/LOGO.PNG":      "image/png",
 		"/noext":         "application/octet-stream",
@@ -495,6 +496,34 @@ func TestContentTypes(t *testing.T) {
 		if got := do(site, "GET", path).Header().Get("Content-Type"); got != want {
 			t.Errorf("%s: Content-Type = %q, want %q", path, got, want)
 		}
+	}
+}
+
+// Like nginx's default_type: e.g. Matrix's /.well-known/matrix/client is JSON without an extension.
+func TestDefaultType(t *testing.T) {
+	client := `{"m.homeserver":{"base_url":"https://matrix.example.org"}}` + strings.Repeat(" ", 200)
+	root := writeTree(t, map[string]string{
+		".well-known/matrix/client": client,
+		"app.foo":                   "x",
+		"app.bar":                   "x",
+		"index.html":                index,
+	})
+	site := load(t, Config{Root: root, CacheControl: "no-cache",
+		Types: map[string]string{".foo": "text/plain; charset=utf-8"}, DefaultType: "application/json"})
+	for path, want := range map[string]string{
+		"/.well-known/matrix/client": "application/json",
+		"/app.bar":                   "application/json",
+		"/app.foo":                   "text/plain; charset=utf-8",
+		"/index.html":                "text/html; charset=utf-8",
+	} {
+		if got := do(site, "GET", path).Header().Get("Content-Type"); got != want {
+			t.Errorf("%s: Content-Type = %q, want %q", path, got, want)
+		}
+	}
+	// The default type decides compressibility like any other.
+	rec := do(site, "GET", "/.well-known/matrix/client", "Accept-Encoding", "gzip")
+	if rec.Header().Get("Content-Encoding") != "gzip" || gunzip(t, rec.Body.Bytes()) != client {
+		t.Errorf("default-typed JSON not served gzipped: %v", rec.Header())
 	}
 }
 
