@@ -19,6 +19,7 @@ func TestParseConfig(t *testing.T) {
 		"-header", "X-Frame-Options: DENY",
 		"-header", "content-security-policy:  frame-ancestors 'none'  ",
 		"-type", ".WEBC=application/x-thing",
+		"-default-type", "application/json",
 		"-precompressed",
 	}, nil, io.Discard)
 	if err != nil {
@@ -32,6 +33,7 @@ func TestParseConfig(t *testing.T) {
 		CacheControl:  "no-cache",
 		Headers:       http.Header{"X-Frame-Options": {"DENY"}, "Content-Security-Policy": {"frame-ancestors 'none'"}},
 		Types:         map[string]string{".webc": "application/x-thing"},
+		DefaultType:   "application/json",
 		Precompressed: true,
 		ReadTimeout:   10 * time.Second,
 		IdleTimeout:   2 * time.Hour,
@@ -93,6 +95,7 @@ func TestEnvironmentLayering(t *testing.T) {
 			"Link":                    {"<a>", "<b>", "<c>", "<d>", "<e>", "<f>"},
 		},
 		Types:         map[string]string{".webc": "application/x-thing"},
+		DefaultType:   "application/octet-stream",
 		Precompressed: true,
 		ReadTimeout:   5 * time.Second,
 		IdleTimeout:   2 * time.Hour,
@@ -154,6 +157,10 @@ func TestParseConfigRejects(t *testing.T) {
 		"type without dot":         {"-type", "js=text/javascript"},
 		"type double extension":    {"-type", ".tar.gz=application/gzip"},
 		"type invalid media type":  {"-type", ".x=not a type"},
+		"type without subtype":     {"-type", ".x=json"},
+		"empty default-type":       {"-default-type", ""},
+		"invalid default-type":     {"-default-type", "json"},
+		"default-type with CRLF":   {"-default-type", "text/plain\r\nX: y"},
 		"positional argument":      {"dist"},
 	} {
 		t.Run(name, func(t *testing.T) {

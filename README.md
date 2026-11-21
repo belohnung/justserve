@@ -46,7 +46,8 @@ the pod OOM-killed. Only the gzip copies made at startup stay in the server's ow
     its encodings instead.
 - **Content types**:
   - they are fixed per extension; add or change one with `-type`;
-  - unknown extensions are served as `application/octet-stream`;
+  - files with an unknown extension or none get `-default-type`
+    (`application/octet-stream` unless set);
   - browsers are always told not to guess another type (`nosniff`).
 - **Files**:
   - every file under the root is served, dotfiles included;
@@ -68,6 +69,7 @@ defaults with `ENV` and a Deployment overrides single keys.
 | `-cache-control VALUE` | `JUSTSERVE_CACHE_CONTROL` | `no-cache` | Cache-Control for everything else |
 | `-header 'Name: value'` | `JUSTSERVE_HEADER_<label>` | | sent with every response |
 | `-type .ext=media/type` | `JUSTSERVE_TYPE_<label>` | | add or override a content type |
+| `-default-type TYPE` | `JUSTSERVE_DEFAULT_TYPE` | `application/octet-stream` | content type for files without a known extension, like nginx's `default_type` |
 | `-precompressed` | `JUSTSERVE_PRECOMPRESSED=true` | `false` | use `.br` / `.zst` / `.gz` files instead of compressing at startup |
 | `-read-timeout D` | `JUSTSERVE_READ_TIMEOUT` | `10s` | close connections that haven't sent a complete request within D |
 | `-idle-timeout D` | `JUSTSERVE_IDLE_TIMEOUT` | `2h` | close idle connections; keep it above the gateway's upstream idle timeout |

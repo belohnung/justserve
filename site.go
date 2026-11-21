@@ -149,7 +149,7 @@ func (s *Site) load(root *os.Root, cfg Config) error {
 		}
 		urlPath := "/" + name
 		s.files[urlPath] = &entry{
-			contentType:  contentType(name, cfg.Types),
+			contentType:  contentType(name, cfg.Types, cfg.DefaultType),
 			cacheControl: s.cacheControlFor(urlPath),
 			identity:     rep,
 		}
